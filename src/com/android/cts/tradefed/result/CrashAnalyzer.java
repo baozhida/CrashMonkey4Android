@@ -17,26 +17,24 @@ public class CrashAnalyzer {
 		this.mCrashFile = mCrashFile;
 	}
 
-	private static final String ANR = "ANR";
-	private static final String JAVACRASH = "JAVACRASH";
+	private static final String ANR = "ActivityManager: ANR in.*";
+	private static final String ANR1 = "ANRManager: ANR in.*";
+	
 	private static final String CRASH_FILE = "crash.txt";
-	private static final String HEAD_REGEX = "^[0-1][0-9]-[0-2][0-9]\\s[0-2][0-9]:[0-6][0-9]:[0-5][0-9].[\\d]+\\s+[\\d]+\\s+[\\d]+\\s+E\\s";
-	private static final String ANR_REGEX = HEAD_REGEX
-			+ "ActivityManager:\\sANR\\sin.*";
-	private static final String CRASH_REGEX = HEAD_REGEX + "AndroidRuntime:.*";
-	private static final String COMMON_REGEX = "^[0-1][0-9]-[0-2][0-9]\\s[0-2][0-9]:[0-6][0-9]:[0-5][0-9].[\\d]+\\s+[\\d]+\\s+[\\d]+\\s+[VDIWE]\\s.*";
+	private static final String ERROR_REGEX = "^[0-1][0-9]-[0-3][0-9]\\s[0-2][0-9]:[0-6][0-9]:[0-5][0-9].[\\d]+\\s+[\\d]+\\s+[\\d]+\\s+E\\s";
+	private static final String ANR_REGEX = ERROR_REGEX+ANR;
+	private static final String ANR_REGEX1 = ERROR_REGEX+ANR1;
+
+	private static final String CRASH_REGEX = ERROR_REGEX + "AndroidRuntime:.*";
+	private static final String WARN_REGEX = "^[0-1][0-9]-[0-3][0-9]\\s[0-2][0-9]:[0-6][0-9]:[0-5][0-9].[\\d]+\\s+[\\d]+\\s+[\\d]+\\s+W\\s.*";
 	private File mLogFile = null;
 	private File mCrashFile = null;
-	private boolean isCrashMessage = false;
-	private int crashCount = 0;
-	private int anrCount = 0;
+	private int CrashCount = 1;
+	private int ANRCount = 1;
+	private int CommonERRORCount = 1;
+	private int WARNCount = 1;
 
-	// private static Map<String, String> mCrash = new HashMap<String,
-	// String>();
-	// static {
-	// mCrash.put(ANR, "ANR");
-	// mCrash.put(JAVACRASH, "java.lang.NullPointerException");
-	// }
+
 
 	public CrashAnalyzer(File file, File crashFile) {
 		mLogFile = file;
@@ -60,47 +58,54 @@ public class CrashAnalyzer {
 			br = new BufferedReader(fr);
 			wr = new FileWriter(mCrashFile);
 			String line = null;
-			boolean continueWrite = false;
 			while ((line = br.readLine()) != null) {
 
 				// 先判断有没有crash
 				if (Pattern.matches(CRASH_REGEX, line)) {
-					if (Pattern.matches(HEAD_REGEX
-							+ "AndroidRuntime:\\s+Process.*", line)) {
-						String str = getHead("Crash " + (crashCount++)
-								+ " Message");
-						wr.write(str);
-					}
-					wr.write(line + "\n");
-					continueWrite = true;
+					String str = getHead("Crash num " + CrashCount + " Message");
+					CrashCount ++;
+					wr.write(str);
+					wr.write(line + System.getProperty("line.separator"));
 					continue;
 				}
 
 				// 判断有没有ANR
 				if (Pattern.matches(ANR_REGEX, line)) {
-					String str = getHead("ANR " + anrCount + " Message");
+					String str = getHead("ANR num " + ANRCount + " Message");
+					ANRCount ++;
 					wr.write(str);
-					wr.write(line + "\n");
-					continueWrite = true;
+					wr.write(line + System.getProperty("line.separator"));
+					continue;
+				}
+				// 判断有没有ANR1
+				if (Pattern.matches(ANR_REGEX1, line)) {
+					String str = getHead("ANR num " + ANRCount + " Message");
+					ANRCount ++;
+					wr.write(str);
+					wr.write(line + System.getProperty("line.separator"));
 					continue;
 				}
 
 				// 输出有E标识的信息
-				if (Pattern.matches(HEAD_REGEX + ".*", line)) {
-					wr.write(line + "\n");
-					// continueWrite = true;
+				if (Pattern.matches(ERROR_REGEX + ".*", line)) {
+					String str = getHead("CommonERROR num " + CommonERRORCount + " Message");
+					CommonERRORCount ++;
+					wr.write(str);
+					wr.write(line + System.getProperty("line.separator"));
 					continue;
 				}
-				// 结束符
-				if (Pattern.matches(COMMON_REGEX, line)) {
-					if (!continueWrite)
-						continue;
-					String str = getHead("Done");
-
-					wr.write(str + "\n");
-					continueWrite = false;
+				
+				// 输出有WARN标识的信息
+				/*
+				if (Pattern.matches(WARN_REGEX + ".*", line)) {
+					String str = getHead("WARN num " + WARNCount + " Message");
+					WARNCount ++;
+					wr.write(str);
+					wr.write(line + System.getProperty("line.separator"));
+					continue;
 				}
-
+				*/
+				
 			}
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
@@ -134,24 +139,21 @@ public class CrashAnalyzer {
 	}
 
 	private String getHead(String str) {
-		String output = "===================================================================="
-				+ str
-				+ "====================================================================\n";
+		String output = "==="+ str + "===";
 
 		return output;
 	}
 
 	public boolean hasCrash() {
-		return anrCount > 0 || crashCount > 0;
+		return ANRCount > 1 || CrashCount > 1;
 	}
 	
 	public int getCrashCount(){
-		return anrCount + crashCount;
+		return ANRCount + CrashCount -2;
 	}
 
 	public static void main(String[] args) {
-		File file = new File(
-				"/Users/wuxian/Documents/android-cts/repository/logs/2015.06.03_11.41.21/monkey_8465242561598443342.txt");
+		File file = new File("d:/monkey_8660870776125556895.txt");
 		CrashAnalyzer analyzer = new CrashAnalyzer(file);
 		analyzer.parserLogcat();
 

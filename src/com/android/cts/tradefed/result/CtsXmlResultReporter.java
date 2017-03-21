@@ -465,12 +465,12 @@ public class CtsXmlResultReporter implements ITestInvocationListener {
 
 		reporter.createReporter();
 
-		try {
-			reporter.drawImage();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+//		try {
+//			reporter.drawImage();
+//		} catch (IOException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}
 		// 最后一张截图
 		File finalFIle = new File(mLogDir, monkeyTag.getFinalPng());
 		if (finalFIle.exists()) {
