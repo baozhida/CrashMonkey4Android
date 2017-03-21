@@ -1,6 +1,9 @@
 package com.android.cts.tradefed.testtype;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.List;
 
 import com.android.chimpchat.adb.AdbChimpDevice;
@@ -45,23 +48,17 @@ public class MonkeyTest implements IDeviceTest, IResumableTest, IBuildReceiver {
 	@Option(name = "v", description = "monkey event count")
 	private int mInjectEvents = 1000;
 	@Option(name = "throttle", description = "The delay time between the events")
-	private int mThrottle = 300;
+	private int mThrottle = 100;
 
-	@Option(name = "pct-tap", description = "percentage of tap event")
+	@Option(name = "pct-touch", description = "percentage of tap event")
 	private float mTouchPct = 0.0f;
 	@Option(name = "pct-motion", description = "percentage of motion event")
 	private float mMotionPct = 0.0f;
-	@Option(name = "pct-nav", description = "percentage of navigation event")
-	private float mNavPct = 0.0f;
-	@Option(name = "pct-majornav", description = "percentage of major navigation event")
-	private float mMajorNavPct = 0.0f;
 	@Option(name = "pct-syskeys", description = "percentage of system key event")
 	private float mSyskeysPct = 0.0f;
-	@Option(name = "pct-drag", description = "percentage of drag evnet")
-	private float mDrag = 0.0f;
 	@Option(name = "logcat-size", description = "The max number of logcat data in bytes to capture when --logcat-on-failure is on. "
 			+ "Should be an amount that can comfortably fit in memory.")
-	private int mMaxLogcatBytes = 20 * 1024; // 20K
+	private int mMaxLogcatBytes = 50 * 1024; // 20K
 
 	@Option(name = "plan", description = "the test plan to run.", importance = Importance.IF_UNSET)
 	private String mPlanName = null;
@@ -148,9 +145,9 @@ public class MonkeyTest implements IDeviceTest, IResumableTest, IBuildReceiver {
 			Monkey monkey = new Monkey(mPackage, getChimpDevice(), mFactors);
 			monkey.setY(ctsXmlResultReporter.getStatusBarHeight());
 			for (int i = 0; i < mInjectEvents; i++) {
-				saveScreenshot(RUNNINT_SCREENSHOT);
+				//saveScreenshot(RUNNINT_SCREENSHOT);
 				monkey.nextRandomEvent(ctsXmlResultReporter);
-				saveLogcat();
+				//saveLogcat();
 				Thread.sleep(mThrottle);
 			}
 		} catch (InterruptedException e) {
@@ -162,11 +159,11 @@ public class MonkeyTest implements IDeviceTest, IResumableTest, IBuildReceiver {
 		afterTest();
 	}
 
-	// 测试后的清楚操作
+	// 测试后的清除操作
 	private void afterTest() throws DeviceNotAvailableException {
 		// 保存最后的现场截图
 		saveScreenshot(FINAL_SCREENSHOT);
-		// 卸载应用
+		// 
 		destoryListener();
 		// 卸载应用
 		uninstallPackage();
@@ -307,6 +304,8 @@ public class MonkeyTest implements IDeviceTest, IResumableTest, IBuildReceiver {
 		if (result.contains("does not exist") || result.contains("Error")) {
 			throw new IllegalArgumentException(String.format("%s", result));
 		}
+		// 清理 catlog缓存
+		clearMobileLogBuffer();
 		// 启动Monkey log抓取器
 		startLogcat();
 
@@ -318,16 +317,23 @@ public class MonkeyTest implements IDeviceTest, IResumableTest, IBuildReceiver {
 		}
 
 	}
+	
+	private void clearMobileLogBuffer(){
+        try {
+        	String SN = getDevice().getSerialNumber();
+            Runtime.getRuntime().exec("cmd /c adb -s "+SN+" shell logcat -c");
+            CLog.i("clearMobileLogBuffer"+SN);
+        } catch (IOException e) {
+        	e.printStackTrace();
+        }
+    }
 
 	// 组装各个monkey事件的比重
 	private float[] parseFactors() {
 		float[] mFactors = new float[MonkeySourceRandom.FACTORZ_COUNT];
 		mFactors[MonkeySourceRandom.FACTOR_TOUCH] = mTouchPct;
 		mFactors[MonkeySourceRandom.FACTOR_MOTION] = mMotionPct;
-		mFactors[MonkeySourceRandom.FACTOR_NAV] = mNavPct;
-		mFactors[MonkeySourceRandom.FACTOR_MAJORNAV] = mMajorNavPct;
 		mFactors[MonkeySourceRandom.FACTOR_SYSOPS] = mSyskeysPct;
-		mFactors[MonkeySourceRandom.FACTOR_DRAG] = mDrag;
 		return mFactors;
 	}
 
