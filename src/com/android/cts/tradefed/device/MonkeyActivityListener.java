@@ -33,7 +33,7 @@ public class MonkeyActivityListener implements Runnable {
 				String result = mDevice.executeShellCommand(GET_ACTIVITY_CMD);
 				if (!result.contains(mPackage)&&running) {
 					CLog.i(String
-							.format("Current activity is %s, It is not your test app %s.restart app",
+							.format("Current activity is %s, It is not test app %s \nrestart app",
 									result, mPackage));
 					mDevice.executeShellCommand("am start " + mPackage + "/"
 							+ mActivity);
