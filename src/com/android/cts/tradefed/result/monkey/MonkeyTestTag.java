@@ -127,7 +127,7 @@ public class MonkeyTestTag extends AbstractXmlPullParser {
 					tapTag.parse(parser);
 					events.add(tapTag);
 				}
-				if (events.size() >= 50)
+				if (events.size() >= 1)
 					return;
 			}
 			eventType = parser.next();
