@@ -6,30 +6,17 @@ import java.util.Random;
 import com.android.tradefed.log.LogUtil.CLog;
 
 public class MonkeySourceRandom implements MonkeyEventSource {
-	// 导航栏,键盘上的上下左右键
-	private static final String[] NAV_KEYS = { "KEYCODE_DPAD_UP",
-			"KEYCODE_DPAD_DOWN", "KEYCODE_DPAD_LEFT", "KEYCODE_DPAD_RIGHT" };
-	// 导航栏,键盘上的中心键，为确定键
-	private static final String[] MAJOR_NAV_KEYS = { "KEYCODE_DPAD_CENTER",
-			"KEYCODE_MENU" };
-
 	// 系统按键
-	private static final String[] SYS_KEYS = { "KEYCODE_HOME", "KEYCODE_BACK",
-			"KEYCODE_CALL", "KEYCODE_ENDCALL", "KEYCODE_VOLUME_UP",
-			"KEYCODE_VOLUME_DOWN", "KEYCODE_MUTE" };
-	// Monkey测试中的九大参数
+	private static final String[] SYS_KEYS = { "KEYCODE_BACK" };
+	// Monkey测试中的九大参数，只用到3个
 	public static final int FACTOR_TOUCH = 0;
 	public static final int FACTOR_MOTION = 1;
-	public static final int FACTOR_DRAG = 2;
-	public static final int FACTOR_NAV = 3;
-	public static final int FACTOR_MAJORNAV = 4;
-	public static final int FACTOR_SYSOPS = 5;
+	public static final int FACTOR_SYSOPS = 2;
 
-	public static final int FACTORZ_COUNT = 6;
-	// 点击事件的3种不同方式
+	public static final int FACTORZ_COUNT = 3;
+	// 点击事件的2种不同方式
 	private static final int GESTURE_TAP = 0;
-	private static final int GESTURE_MOTION = 1;
-	private static final int DRAG = 2;
+	private static final int GESTURE_DRAG = 1;
 
 	private float[] mFactors = new float[FACTORZ_COUNT];
 	private int mEventCount = 0;
@@ -46,16 +33,9 @@ public class MonkeySourceRandom implements MonkeyEventSource {
 		this.mThrottle = throttle;
 		this.mRectangle = rect;
 		// 默认的各个事件的比例
-		mFactors[FACTOR_TOUCH] = 25.0f;
-		mFactors[FACTOR_MOTION] = 0.0f;
-		mFactors[FACTOR_DRAG] = 30.0f;
-		mFactors[FACTOR_NAV] = 25.0f;
-		mFactors[FACTOR_MAJORNAV] = 15.0f;
+		mFactors[FACTOR_TOUCH] = 65.0f;
+		mFactors[FACTOR_MOTION] = 30.0f;
 		mFactors[FACTOR_SYSOPS] = 5.0f;
-		// mFactors[FACTOR_APPSWITCH] = 0.0f;
-		// mFactors[FACTOR_FLIP] = 0.0f;
-		// mFactors[FACTOR_ANYTHING] = 0.0f;
-		// mFactors[FACTOR_PINCHZOOM] = 0.0f;
 
 		mQ = new MonkeyEventQueue(random, throttle, randomizeThrottle);
 	}
@@ -76,40 +56,24 @@ public class MonkeySourceRandom implements MonkeyEventSource {
 	}
 
 	private void generateEvents() {
-		float cls = mRandom.nextFloat();
+		//float cls = mRandom.nextFloat();
+		int cls = mRandom.nextInt(FACTORZ_COUNT);
 		String lastKey = "";
 
-		if (cls < mFactors[FACTOR_TOUCH]) {// 15
+		if (cls == FACTOR_TOUCH) {// 0
 			CLog.d("FACTOR_TOUCH");
 			generatePointerEvent(mRandom, GESTURE_TAP);
 			return;
-		} else if (cls < mFactors[FACTOR_MOTION]) {// 10
+		} else if (cls == FACTOR_MOTION) {// 1
 			CLog.d("FACTOR_MOTION");
-			generatePointerEvent(mRandom, GESTURE_MOTION);
+			generatePointerEvent(mRandom, GESTURE_DRAG);
 			return;
-		} else if (cls < mFactors[FACTOR_DRAG]) {
-			CLog.d("FACTOR_DRAG");
-			generatePointerEvent(mRandom, DRAG);
-			return;
+		} else if (cls == FACTOR_SYSOPS) {// 2
+			CLog.d("FACTOR_SYSOPS");
+			lastKey = SYS_KEYS[0];
 		}
 
-		// The remaining event categories are injected as key events
-		for (;;) {
-			if (cls < mFactors[FACTOR_NAV]) {// 25
-				CLog.d("FACTOR_NAV");
-				lastKey = NAV_KEYS[mRandom.nextInt(NAV_KEYS.length)];
-			} else if (cls < mFactors[FACTOR_MAJORNAV]) {// 15
-				CLog.d("FACTOR_MAJORNAV");
-				lastKey = MAJOR_NAV_KEYS[mRandom.nextInt(MAJOR_NAV_KEYS.length)];
-			} else if (cls < mFactors[FACTOR_SYSOPS]) {// 2
-				CLog.d("FACTOR_SYSOPS");
-				lastKey = SYS_KEYS[mRandom.nextInt(SYS_KEYS.length)];
-			}
-			if (lastKey != "KEYCODE_POWER" && lastKey != "KEYCODE_ENDCALL") {
-				break;
-			}
-
-		}
+		
 		// 按键
 		MonkeyKeyEvent e = new MonkeyKeyEvent(lastKey);
 		mQ.addLast(e);
@@ -206,10 +170,12 @@ public class MonkeySourceRandom implements MonkeyEventSource {
 
 		// sometimes we'll move during the touch
 		// 拖拽动作
-		if (gesture == GESTURE_MOTION) {
+		if (gesture == GESTURE_TAP) {
+			mQ.addLast(new MonkeyTapEvent(p1));
+		} else if (gesture == GESTURE_DRAG) {
 			MonkeyMotionEvent motionEvent = new MonkeyMotionEvent();
 			motionEvent.setDownPoint(p1);
-			int count = random.nextInt(10);
+			int count = random.nextInt(3);
 			Point newPoint = randomWalk(random, mRectangle, p1, v1);
 			for (int i = 0; i < count; i++) {
 				newPoint = randomWalk(random, mRectangle, newPoint, v1);
@@ -220,14 +186,6 @@ public class MonkeySourceRandom implements MonkeyEventSource {
 			motionEvent.setUpPoint(newPoint);
 			mQ.addLast(motionEvent);
 			// 点击动作
-		} else if (gesture == GESTURE_TAP) {
-			mQ.addLast(new MonkeyTapEvent(p1));
-		} else if (gesture == DRAG) {
-			MonkeyDragEvent dragEvent = new MonkeyDragEvent();
-			dragEvent.setDownPoint(p1);
-			Point upPoint = getDragNextPoint(random, mRectangle, p1);
-			dragEvent.setUpPoint(upPoint);
-			mQ.add(dragEvent);
 		}
 
 	}

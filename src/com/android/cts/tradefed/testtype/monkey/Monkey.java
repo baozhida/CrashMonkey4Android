@@ -6,6 +6,7 @@ import java.util.Random;
 
 import com.android.chimpchat.adb.AdbChimpDevice;
 import com.android.cts.tradefed.result.CtsXmlResultReporter;
+import com.android.tradefed.log.LogUtil.CLog;
 
 public class Monkey {
 
@@ -17,7 +18,7 @@ public class Monkey {
 	private ArrayList<String> mMainCategories = new ArrayList<String>();
 	/** Applications we can switch to. */
 
-	private long mThrottle = 300;
+	private long mThrottle = 100;
 	private int mVerbose = 1;
 	private boolean mRandomizeThrottle = false;
 	private AdbChimpDevice mDevice;
@@ -53,7 +54,7 @@ public class Monkey {
 	private void init(float[] factors) {
 		Random mRandom = new SecureRandom();
 		mRandom.setSeed(-1);
-
+		CLog.i(mDevice.getProperty("display.width"));
 		mRectangle = new Rectangle(Integer.parseInt(mDevice
 				.getProperty("display.width")), Integer.parseInt(mDevice
 				.getProperty("display.height")));
