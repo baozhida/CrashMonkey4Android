@@ -58,15 +58,15 @@ public class MonkeySourceRandom implements MonkeyEventSource {
 		randomNumber = mRandom.nextInt(100);
 		//CLog.i("随机数是："+randomNumber+"、"+mFactors[FACTOR_TOUCH]+"、"+mFactors[FACTOR_MOTION]+"、"+mFactors[FACTOR_SYSOPS]);
 		if (randomNumber >= 0 && randomNumber <= mFactors[FACTOR_TOUCH]) {
-			CLog.i("FACTOR_TOUCH");
+			CLog.d("FACTOR_TOUCH");
 			return generatePointerEvent(mRandom, GESTURE_TAP);
 		} else if (randomNumber > mFactors[FACTOR_TOUCH]
 				&& randomNumber <= mFactors[FACTOR_TOUCH] + mFactors[FACTOR_MOTION]) {
-			CLog.i("FACTOR_MOTION");
+			CLog.d("FACTOR_MOTION");
 			return generatePointerEvent(mRandom, GESTURE_DRAG);
 		} else if (randomNumber > mFactors[FACTOR_TOUCH] + mFactors[FACTOR_MOTION]
 				&& randomNumber <= mFactors[FACTOR_TOUCH] + mFactors[FACTOR_MOTION] + mFactors[FACTOR_SYSOPS]) {
-			CLog.i("FACTOR_SYSOPS");
+			CLog.d("FACTOR_SYSOPS");
 			lastKey = SYS_KEYS[0];
 		}
 
