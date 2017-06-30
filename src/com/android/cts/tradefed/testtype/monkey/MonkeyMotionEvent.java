@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import com.android.chimpchat.adb.AdbChimpDevice;
+import com.android.tradefed.log.LogUtil.CLog;
 
 //motion事件是由屏幕上某处一个down事件、一系列伪随机的移动事件和一个up事件组成
 public class MonkeyMotionEvent extends MonkeyEvent {
@@ -51,22 +52,7 @@ public class MonkeyMotionEvent extends MonkeyEvent {
 
 	@Override
 	public int fireEvent(AdbChimpDevice acDevice) {
-		// TODO Auto-generated method stub
-
-		// try {
-		// acDevice.getManager().touchDown(downPoint.x, downPoint.y);
-		// for (Point point : movePoints) {
-		// acDevice.getManager().touchMove(point.x, point.y);
-		// }
-		//
-		// acDevice.getManager().touchUp(upPoint.x, upPoint.y);
-		//
-		// } catch (IOException e) {
-		// // TODO Auto-generated catch block
-		// e.printStackTrace();
-		// }
 		acDevice.drag(downPoint.x, downPoint.y, upPoint.x, upPoint.y, 1, 1000);
-
 		return 0;
 	}
 

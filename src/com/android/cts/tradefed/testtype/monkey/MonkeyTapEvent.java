@@ -4,6 +4,7 @@ import java.awt.Point;
 import java.io.IOException;
 
 import com.android.chimpchat.adb.AdbChimpDevice;
+import com.android.tradefed.log.LogUtil.CLog;
 
 //触摸事件是指在屏幕中的一个down-up事件，即在屏幕某处按下并抬起的操作
 
@@ -32,7 +33,6 @@ public class MonkeyTapEvent extends MonkeyEvent {
 		// TODO Auto-generated method stub
 		try {
 			acDevice.getManager().tap(mPoint.x, mPoint.y);
-
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

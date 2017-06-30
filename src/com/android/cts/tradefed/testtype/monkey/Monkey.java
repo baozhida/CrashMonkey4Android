@@ -24,22 +24,27 @@ public class Monkey {
 	private AdbChimpDevice mDevice;
 	private Rectangle mRectangle = null;
 
-	public Monkey(String testPackage, AdbChimpDevice device, float[] factors) {
+	public Monkey(String testPackage, AdbChimpDevice device, float[] factors) throws InterruptedException {
 		this.testPackage = testPackage;
 		this.mDevice = device;
 		init(factors);
 	}
-
+	
 	/**
 	 * Fire next random event
 	 */
-	public void nextRandomEvent(CtsXmlResultReporter ctsXmlResultReporter) {
-		MonkeyEvent ev = mEventSource.getNextEvent();
-		
-		// System.out.println("Firing Monkey Event:" + ev.toString());
-		if (ev != null) {
-			ctsXmlResultReporter.addMonkeyEvent(ev);
-			ev.fireEvent(mDevice);
+	public MonkeyEvent creatEvent() {
+		MonkeyEvent ev = mEventSource.generateEvents();
+		return ev;
+	}
+
+	/**
+	 * Fire next event
+	 */
+	public void fireEvent(MonkeyEvent monkeyEvent, CtsXmlResultReporter ctsXmlResultReporter) {
+		if (monkeyEvent != null) {
+			ctsXmlResultReporter.addMonkeyEvent(monkeyEvent);
+			monkeyEvent.fireEvent(mDevice);
 		}
 
 	}
@@ -50,11 +55,14 @@ public class Monkey {
 
 	/**
 	 * Initiate the monkey
+	 * @throws InterruptedException 
 	 */
-	private void init(float[] factors) {
+	private void init(float[] factors) throws InterruptedException {
 		Random mRandom = new SecureRandom();
-		mRandom.setSeed(-1);
-		CLog.i(mDevice.getProperty("display.width"));
+		mRandom.setSeed(10);
+		Thread.sleep(5000);
+		CLog.i("屏幕宽度"+mDevice.getProperty("display.width"));
+		CLog.i("屏幕高度"+mDevice.getProperty("display.height"));
 		mRectangle = new Rectangle(Integer.parseInt(mDevice
 				.getProperty("display.width")), Integer.parseInt(mDevice
 				.getProperty("display.height")));
@@ -63,11 +71,11 @@ public class Monkey {
 		mEventSource.setVerbose(mVerbose);
 		for (int i = 0; i < factors.length; i++) {
 			if (factors[i] > 0) {
-				mEventSource.setFactors(i, -factors[i]);
+				mEventSource.setFactors(i, factors[i]);
 			}
 		}
 
-		mEventSource.validate();
+		//mEventSource.validate();
 
 		// start a random activity
 		// mEventSource.generateActivity();

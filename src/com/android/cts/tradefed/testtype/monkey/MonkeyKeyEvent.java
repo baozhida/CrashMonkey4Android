@@ -3,6 +3,7 @@ package com.android.cts.tradefed.testtype.monkey;
 import java.io.IOException;
 
 import com.android.chimpchat.adb.AdbChimpDevice;
+import com.android.tradefed.log.LogUtil.CLog;
 
 
 //设备按键事件,包括:基本的导航事件(nav),主要导航事件(majornav)和系统事件(syskeys)

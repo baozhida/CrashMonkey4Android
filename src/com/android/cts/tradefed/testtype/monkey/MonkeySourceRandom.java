@@ -19,25 +19,21 @@ public class MonkeySourceRandom implements MonkeyEventSource {
 	private static final int GESTURE_DRAG = 1;
 
 	private float[] mFactors = new float[FACTORZ_COUNT];
-	private int mEventCount = 0;
 	private Random mRandom;
 
 	private long mThrottle = 0;
-	private MonkeyEventQueue mQ;
 	private int mVerbose = 0;
 	private Rectangle mRectangle = null;
 
-	public MonkeySourceRandom(Random random, long throttle,
-			boolean randomizeThrottle, Rectangle rect) {
+	public MonkeySourceRandom(Random random, long throttle, boolean randomizeThrottle, Rectangle rect) {
 		this.mRandom = random;
 		this.mThrottle = throttle;
 		this.mRectangle = rect;
 		// 默认的各个事件的比例
-		mFactors[FACTOR_TOUCH] = 65.0f;
-		mFactors[FACTOR_MOTION] = 30.0f;
-		mFactors[FACTOR_SYSOPS] = 5.0f;
+		mFactors[FACTOR_TOUCH] = 45.0f;
+		mFactors[FACTOR_MOTION] = 45.0f;
+		mFactors[FACTOR_SYSOPS] = 10.0f;
 
-		mQ = new MonkeyEventQueue(random, throttle, randomizeThrottle);
 	}
 
 	// 设置各个事件的百分比
@@ -55,40 +51,34 @@ public class MonkeySourceRandom implements MonkeyEventSource {
 		mFactors[index] = v;
 	}
 
-	private void generateEvents() {
-		//float cls = mRandom.nextFloat();
-		int cls = mRandom.nextInt(FACTORZ_COUNT);
-		String lastKey = "";
+	public MonkeyEvent generateEvents() {
 
-		if (cls == FACTOR_TOUCH) {// 0
-			CLog.d("FACTOR_TOUCH");
-			generatePointerEvent(mRandom, GESTURE_TAP);
-			return;
-		} else if (cls == FACTOR_MOTION) {// 1
-			CLog.d("FACTOR_MOTION");
-			generatePointerEvent(mRandom, GESTURE_DRAG);
-			return;
-		} else if (cls == FACTOR_SYSOPS) {// 2
-			CLog.d("FACTOR_SYSOPS");
+		int randomNumber;
+		String lastKey = "";
+		randomNumber = mRandom.nextInt(100);
+		//CLog.i("随机数是："+randomNumber+"、"+mFactors[FACTOR_TOUCH]+"、"+mFactors[FACTOR_MOTION]+"、"+mFactors[FACTOR_SYSOPS]);
+		if (randomNumber >= 0 && randomNumber <= mFactors[FACTOR_TOUCH]) {
+			CLog.i("FACTOR_TOUCH");
+			return generatePointerEvent(mRandom, GESTURE_TAP);
+		} else if (randomNumber > mFactors[FACTOR_TOUCH]
+				&& randomNumber <= mFactors[FACTOR_TOUCH] + mFactors[FACTOR_MOTION]) {
+			CLog.i("FACTOR_MOTION");
+			return generatePointerEvent(mRandom, GESTURE_DRAG);
+		} else if (randomNumber > mFactors[FACTOR_TOUCH] + mFactors[FACTOR_MOTION]
+				&& randomNumber <= mFactors[FACTOR_TOUCH] + mFactors[FACTOR_MOTION] + mFactors[FACTOR_SYSOPS]) {
+			CLog.i("FACTOR_SYSOPS");
 			lastKey = SYS_KEYS[0];
 		}
 
-		
 		// 按键
-		MonkeyKeyEvent e = new MonkeyKeyEvent(lastKey);
-		mQ.addLast(e);
+		return new MonkeyKeyEvent(lastKey);
 
 	}
 
 	@Override
 	public MonkeyEvent getNextEvent() {
-		if (mQ.isEmpty()) {
-			generateEvents();
-		}
-		mEventCount++;
-		MonkeyEvent e = mQ.getFirst();
-		mQ.removeFirst();
-		return e;
+		return	generateEvents();
+
 	}
 
 	@Override
@@ -163,15 +153,16 @@ public class MonkeySourceRandom implements MonkeyEventSource {
 		return true;
 	}
 
-	private void generatePointerEvent(Random random, int gesture) {
+	private MonkeyEvent generatePointerEvent(Random random, int gesture) {
 
 		Point p1 = randomPoint(random, mRectangle);
 		Point v1 = randomVector(random);
 
 		// sometimes we'll move during the touch
-		// 拖拽动作
+		// tap
 		if (gesture == GESTURE_TAP) {
-			mQ.addLast(new MonkeyTapEvent(p1));
+			return new MonkeyTapEvent(p1);
+			// 滑动
 		} else if (gesture == GESTURE_DRAG) {
 			MonkeyMotionEvent motionEvent = new MonkeyMotionEvent();
 			motionEvent.setDownPoint(p1);
@@ -184,45 +175,37 @@ public class MonkeySourceRandom implements MonkeyEventSource {
 			newPoint = randomWalk(random, mRectangle, newPoint, v1);
 			motionEvent.addMovePoint(newPoint);
 			motionEvent.setUpPoint(newPoint);
-			mQ.addLast(motionEvent);
-			// 点击动作
+			return motionEvent;
 		}
+		return null;
 
 	}
 
 	private Point randomPoint(Random random, Rectangle display) {
-		return new Point(random.nextInt(display.getWidth()),
-				random.nextInt(display.getHeight()));
+		return new Point(Math.max(random.nextInt(display.getWidth()),10), Math.max(random.nextInt(display.getHeight()),20));
 	}
 
 	private Point randomVector(Random random) {
-		return new Point((int) ((random.nextFloat() - 0.5f) * 200),
-				(int) ((random.nextFloat() - 0.5f) * 200));
+		return new Point((int) ((random.nextFloat() - 0.5f) * 200), (int) ((random.nextFloat() - 0.5f) * 200));
 	}
 
 	private Point getDragNextPoint(Random random, Rectangle display, Point point) {
 		int[] arg = { -1, 1 };
 		int y = 40 * (random.nextInt(20) - 10);
-		int x = (int) Math.sqrt(Math.pow(2, 4) * Math.pow(10, 4)
-				- Math.abs(y * y));
+		int x = (int) Math.sqrt(Math.pow(2, 4) * Math.pow(10, 4) - Math.abs(y * y));
 		x = arg[random.nextInt(arg.length)] * x;
 		Point newPoint = new Point();
 
 		CLog.d(String.format("(%s,%s)", x, y));
-		newPoint.x = Math.max(Math.min(point.x + x, display.getWidth()), display.getX());
-		newPoint.y = Math.max(Math.min(point.y + y, display.getHeight()), display.getY());
+		newPoint.x = Math.max(Math.min(point.x + x, display.getWidth()-10), display.getX()-10);
+		newPoint.y = Math.max(Math.min(point.y + y, display.getHeight()-20), display.getY()-20);
 		return newPoint;
 	}
 
-	private Point randomWalk(Random random, Rectangle display, Point point,
-			Point vector) {
+	private Point randomWalk(Random random, Rectangle display, Point point, Point vector) {
 		Point newPoint = new Point();
-		newPoint.x = Math
-				.max(Math.min(point.x + (int) (random.nextFloat() * vector.x),
-						display.getWidth()), 0);
-		newPoint.y = Math.max(Math.min(point.y
-				+ (int) (random.nextFloat() * vector.y), display.getHeight()),
-				0);
+		newPoint.x = Math.max(Math.min(point.x + (int) (random.nextFloat() * vector.x), display.getWidth()-10), 10);
+		newPoint.y = Math.max(Math.min(point.y + (int) (random.nextFloat() * vector.y), display.getHeight()-20), 20);
 
 		return newPoint;
 	}
