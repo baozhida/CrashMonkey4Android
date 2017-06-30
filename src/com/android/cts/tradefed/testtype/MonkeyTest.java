@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
 import java.util.List;
 
 import com.android.chimpchat.adb.AdbChimpDevice;
@@ -14,6 +15,7 @@ import com.android.cts.tradefed.device.DeviceUnlock;
 import com.android.cts.tradefed.device.MonkeyActivityListener;
 import com.android.cts.tradefed.result.CtsXmlResultReporter;
 import com.android.cts.tradefed.testtype.monkey.Monkey;
+import com.android.cts.tradefed.testtype.monkey.MonkeyEvent;
 import com.android.cts.tradefed.testtype.monkey.MonkeySourceRandom;
 import com.android.ddmlib.Log;
 import com.android.tradefed.build.IBuildInfo;
@@ -144,10 +146,21 @@ public class MonkeyTest implements IDeviceTest, IResumableTest, IBuildReceiver {
 		try {
 			Monkey monkey = new Monkey(mPackage, getChimpDevice(), mFactors);
 			monkey.setY(ctsXmlResultReporter.getStatusBarHeight());
-			for (int i = 0; i < mInjectEvents; i++) {
+			ArrayList<MonkeyEvent> evevts = new ArrayList<MonkeyEvent>(mInjectEvents);
+			
+			for (int i = 0; i <= mInjectEvents; i++) {
+				evevts.add(monkey.creatEvent());
+			}
+			
+			for (int i = 0; i < evevts.size(); i++) {
+				
 				//saveScreenshot(RUNNINT_SCREENSHOT);
-				monkey.nextRandomEvent(ctsXmlResultReporter);
+				
+				MonkeyEvent event = evevts.get(i);
+				monkey.fireEvent(event,ctsXmlResultReporter);
+				
 				//saveLogcat();
+				
 				Thread.sleep(mThrottle);
 			}
 		} catch (InterruptedException e) {
@@ -334,6 +347,12 @@ public class MonkeyTest implements IDeviceTest, IResumableTest, IBuildReceiver {
 		mFactors[MonkeySourceRandom.FACTOR_TOUCH] = mTouchPct;
 		mFactors[MonkeySourceRandom.FACTOR_MOTION] = mMotionPct;
 		mFactors[MonkeySourceRandom.FACTOR_SYSOPS] = mSyskeysPct;
+		CLog.i("点击、滑动、BACK操作百分比分别是： "+mTouchPct+"%、"+mMotionPct+"%、"+mSyskeysPct+"%");
+		
+		if((int)(mTouchPct+mMotionPct+mSyskeysPct) != 100){
+			new RuntimeException("三个参数的和不是100，请检查确认！");
+		}
+		
 		return mFactors;
 	}
 
